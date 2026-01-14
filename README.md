@@ -23,22 +23,54 @@ mobius_topology/
 └── README.md              # This file
 ```
 
-## Usage
+## Quick Start
 
-1. **Run Simulation**:
+### GitHub Codespaces (Recommended)
+Open in Codespaces for instant setup with all dependencies:
+```bash
+./start_servers.sh
+```
+See [CODESPACES.md](CODESPACES.md) for detailed instructions.
+
+### Local Development
+
+1. **Install Dependencies**:
+   ```bash
+   pip install numpy matplotlib scipy
+   npm install
+   ```
+
+2. **Run Simulation**:
    ```bash
    python mobius_flow.py
    ```
-   This generates 3D trajectory plots and time-series diagnostics in the `results/` folder.
+   Generates 3D trajectory plots and time-series diagnostics in `results/` folder.
 
-2. **Run Tests**:
+3. **Run Tests**:
    ```bash
-   python tests/test_geometry.py
-   # Validates orthogonality and normal flip
-
-   python tests/test_loops.py
-   # Validates parity stability over multi-loop trajectories
+   python tests/test_geometry.py    # Validates orthogonality and normal flip
+   python tests/test_loops.py       # Validates parity stability
    ```
+
+4. **Start Interactive Web Visualization**:
+   ```bash
+   npm run dev     # Vite dev server on port 5173
+   ```
+   Or use the startup script:
+   ```bash
+   ./start_servers.sh
+   ```
+
+## Interactive Visualization
+
+Access the 3D interactive visualization at `http://localhost:5173` after running the dev server.
+
+Features:
+- Real-time Möbius strip particle simulation
+- Adjustable physics parameters (drift, flow dynamics)
+- Multiple manifold topologies (Möbius, Cylinder, Torus, Trefoil)
+- Visual orientation tracking with w₁ parity detection
+- Camera controls and material options
 
 ## Theory
 

@@ -1,0 +1,29 @@
+{
+  "name": "Möbius Topology Simulation",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "forwardPorts": [5173, 8000],
+  "portsAttributes": {
+    "5173": {
+      "label": "Vite Dev Server (3D Visualization)",
+      "onAutoForward": "notify"
+    },
+    "8000": {
+      "label": "Python HTTP Server (Results)",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "pip install numpy matplotlib scipy && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  }
+}

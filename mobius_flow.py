@@ -98,9 +98,9 @@ def run_simulation(mapping_func, drift_type='constant', t_max=4*np.pi, save_data
     
     if save_data:
         prefix = "mobius" if "mobius" in mapping_func.__name__ else "cylinder"
-        np.save(f"C:/Users/macma/.gemini/antigravity/scratch/mobius_topology/data/{prefix}_theta.npy", theta_unwrapped)
-        np.save(f"C:/Users/macma/.gemini/antigravity/scratch/mobius_topology/data/{prefix}_delta.npy", delta_vals)
-        np.save(f"C:/Users/macma/.gemini/antigravity/scratch/mobius_topology/data/{prefix}_w1.npy", w1_vals)
+        np.save(f"data/{prefix}_theta.npy", theta_unwrapped)
+        np.save(f"data/{prefix}_delta.npy", delta_vals)
+        np.save(f"data/{prefix}_w1.npy", w1_vals)
 
     return {
         't': t_vals,
@@ -174,7 +174,7 @@ def plot_results(results, title_prefix="Möbius"):
     ax4.grid(True, linestyle='--', alpha=0.7)
     
     plt.tight_layout()
-    save_path = f"C:/Users/macma/.gemini/antigravity/scratch/mobius_topology/results/{title_prefix.lower()}_results.png"
+    save_path = f"results/{title_prefix.lower()}_results.png"
     plt.savefig(save_path)
     print(f"Results saved to {save_path}")
 

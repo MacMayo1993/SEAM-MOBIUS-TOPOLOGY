@@ -739,11 +739,19 @@ function animate() {
         }
 
         checkSeamCrossing();
+        updateUI();
     }
 
+    // Ball Camera (Follow particle)
+    if (isBallCam && particle) {
+        const offset = new THREE.Vector3(0, 1, 2);
+        offset.applyQuaternion(particle.quaternion);
+        camera.position.lerp(particle.position.clone().add(offset), 0.1);
+        camera.lookAt(particle.position);
+    }
 
-
-    // Always render
+    // Update controls and render
+    controls.update();
     renderer.render(scene, camera);
 }
 

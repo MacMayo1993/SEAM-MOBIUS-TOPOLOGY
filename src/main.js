@@ -162,7 +162,7 @@ function playFlipSound() {
 
 // --- THREE.JS ENGINE ---
 let scene, camera, renderer, controls;
-let particle, runnerBody, runnerArms = [], runnerLegs = [], runnerSkates = [], runnerBoosters = [], probe, ribbonFront, ribbonBack, shell, seam, moe;
+let particle, probe, ribbonFront, ribbonBack, shell, seam;
 let trailPoints = [], trailColors = [];
 let footstepsMesh; // Changed to InstancedMesh
 let footprintCount = 0;
@@ -411,116 +411,29 @@ function setupParticle() {
 
     particle = new THREE.Group();
 
-    // --- SKATER CREATION ---
-    function createSkater() {
-        const group = new THREE.Group();
-        const mat = new THREE.MeshStandardMaterial({ color: 0x3399ff, roughness: 0.5 }); // Blue runner
+    // Simple Ball Particle
+    const ballGeometry = new THREE.SphereGeometry(0.05, 32, 32);
+    const ballMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00ffcc,
+        metalness: 0.3,
+        roughness: 0.4,
+        emissive: 0x00ffcc,
+        emissiveIntensity: 0.2
+    });
+    const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+    particle.add(ball);
 
-        // Torso
-        const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.1, 4, 8), mat);
-        torso.position.y = 0.16; // Lifted so skates are on ground
-        group.add(torso);
-
-        // Head
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), mat);
-        head.position.y = 0.26;
-        group.add(head);
-
-        // Arms (Fixed "Skater" pose - balanced)
-        const armGeo = new THREE.CapsuleGeometry(0.015, 0.08, 4, 8);
-        const armL = new THREE.Mesh(armGeo, mat);
-        armL.position.set(0.06, 0.18, 0);
-        armL.rotation.z = Math.PI / 3;
-        const armR = new THREE.Mesh(armGeo, mat);
-        armR.position.set(-0.06, 0.18, 0);
-        armR.rotation.z = -Math.PI / 3;
-        group.add(armL, armR);
-        runnerArms = [armL, armR];
-
-        // Legs (Slightly spread)
-        const legGeo = new THREE.CapsuleGeometry(0.02, 0.12, 4, 8);
-        const legL = new THREE.Mesh(legGeo, mat);
-        legL.position.set(0.04, 0.1, 0);
-        const legR = new THREE.Mesh(legGeo, mat);
-        legR.position.set(-0.04, 0.1, 0);
-        group.add(legL, legR);
-        runnerLegs = [legL, legR];
-
-        // --- PERFECT ROLLER SKATES ---
-        const skateGeo = new THREE.SphereGeometry(0.025, 16, 16);
-        const skateMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 0.9, roughness: 0.1 });
-        const thrustMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
-
-        [legL, legR].forEach((leg, i) => {
-            const skate = new THREE.Mesh(skateGeo, skateMat);
-            skate.position.y = -0.06; // Exactly at the bottom of the leg
-            leg.add(skate);
-            runnerSkates.push(skate);
-
-            // Rocket Booster
-            const booster = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.005, 0.05), new THREE.MeshStandardMaterial({ color: 0x444444 }));
-            booster.position.set(0, -0.04, -0.04);
-            booster.rotation.x = Math.PI / 3;
-            leg.add(booster);
-
-            // Thrust Glow
-            const glow = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.1, 8), thrustMat);
-            glow.position.set(0, -0.05, -0.1);
-            glow.rotation.x = -Math.PI / 2;
-            leg.add(glow);
-            runnerBoosters.push(glow);
-        });
-
-        runnerBody = group;
-        return group;
-    }
-
-    const skater = createSkater();
-    particle.add(skater);
-
-    // Orientation Beam (Inside)
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.1), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 }));
-    stem.position.y = 0.15;
-    const head = new THREE.Mesh(new THREE.ConeGeometry(0.015, 0.05), new THREE.MeshStandardMaterial({ color: 0xff4444, transparent: true, opacity: 0.2 }));
-    head.position.y = 0.22;
-    probe = new THREE.Group();
-    probe.add(stem, head);
+    // Direction indicator arrow
+    const arrowGeometry = new THREE.ConeGeometry(0.02, 0.08, 8);
+    const arrowMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff4444,
+        emissive: 0xff0000,
+        emissiveIntensity: 0.3
+    });
+    probe = new THREE.Mesh(arrowGeometry, arrowMaterial);
+    probe.position.set(0, 0.08, 0);
+    probe.rotation.x = -Math.PI / 2; // Point forward
     particle.add(probe);
-
-    // Moe B. Usch - Backpack
-    function createMoeBUsch() {
-        const moeGroup = new THREE.Group();
-        const moeMat = new THREE.MeshStandardMaterial({ color: 0xff9900, roughness: 0.7 });
-
-        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.03, 0.05, 4, 8), moeMat);
-        body.position.y = 0.08;
-        moeGroup.add(body);
-
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 16), moeMat);
-        head.position.y = 0.14;
-        moeGroup.add(head);
-
-        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-        const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.006, 8, 8), eyeMat);
-        eyeL.position.set(0.015, 0.15, 0.025);
-        const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.006, 8, 8), eyeMat); // Reusing eyeGeo if possible, or build inline
-        eyeR.position.set(-0.015, 0.15, 0.025);
-        moeGroup.add(eyeL, eyeR);
-
-        const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.008, 0.08, 4, 8), moeMat);
-        arm.position.set(0.04, 0.08, -0.02);
-        arm.rotation.z = -Math.PI / 3;
-        const armR = arm.clone();
-        armR.position.set(-0.04, 0.08, -0.02);
-        armR.rotation.z = Math.PI / 3;
-        moeGroup.add(arm, armR);
-
-        return moeGroup;
-    }
-
-    moe = createMoeBUsch();
-    moe.position.set(0, 0.1, -0.06); // Higher on back
-    runnerBody.add(moe);
 
     scene.add(particle);
 }
@@ -653,54 +566,27 @@ function animate() {
         const surfPred = getSurfacePoint(state.u + dtLook * nextFlow[0], state.v + dtLook * nextFlow[1], manifold);
         const forward = surfPred.p.clone().sub(p).normalize();
 
-        // Place particle EXACTLY on surface (skates will be at ground level)
+        // Place ball on surface
         particle.position.copy(p);
 
-        // Orientation: Face forward, align with normal
-        // A simple way to build a stable orthonormal basis:
-        const lookTarget = p.clone().add(forward);
-        particle.lookAt(lookTarget); // This sets Z-axis to forward
-
-        // Now rotate to align with surface normal (upward)
-        // We need the character's local UP (Y) to be the surface normal
-        const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(particle.quaternion);
-        const qNormal = new THREE.Quaternion().setFromUnitVectors(localUp, nReal);
-        particle.applyQuaternion(qNormal);
-
-        // Moe Animation (Breathing/Sway)
-        if (moe) {
-            const sway = Math.sin(state.t * 4) * 0.05;
-            moe.rotation.z = sway;
-            const breath = 1 + Math.sin(state.t * 2) * 0.02;
-            moe.scale.set(breath, breath, breath);
+        // Orient arrow to point in direction of travel
+        if (probe) {
+            probe.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                forward
+            );
         }
 
-        // --- SKATER ANIMATION ---
-        if (runnerBody) {
-            const glideTime = state.t * 6;
-
-            // Side-to-side drift lean
-            runnerBody.rotation.z = Math.sin(glideTime) * 0.15;
-            runnerBody.rotation.x = -0.1; // Forward lean
-
-            // Minimal arm balancing
-            runnerArms[0].rotation.x = Math.sin(glideTime) * 0.2;
-            runnerArms[1].rotation.x = -Math.sin(glideTime) * 0.2;
-
-            // Rocket Thrust Flicker
-            runnerBoosters.forEach((b, i) => {
-                const s = 1.0 + Math.sin(state.t * 20 + i) * 0.5;
-                b.scale.set(s, s, s * 4);
-                b.material.opacity = 0.5 + Math.random() * 0.5;
-            });
-
-            // --- TOPOLOGICAL FLIP ---
-            const targetRot = state.w1 === 1 ? Math.PI : 0;
-            // Smoothly interpolate the 180-turn
-            runnerBody.rotation.y = THREE.MathUtils.lerp(runnerBody.rotation.y, targetRot, 0.1);
+        // Simple ball color animation based on speed
+        const speedFactor = Math.abs(next[0]) + Math.abs(next[1]);
+        const hue = (state.t * 0.1) % 1;
+        const ballColor = new THREE.Color().setHSL(hue, 0.8, 0.5);
+        if (particle.children[0]) {
+            particle.children[0].material.color.copy(ballColor);
+            particle.children[0].material.emissive.copy(ballColor).multiplyScalar(0.3);
         }
 
-        // Ribbon - Displaced Points
+        // Ribbon trail - Displaced Points
         const width = 0.05;
         const sTop = getSurfacePoint(state.u, state.v + width, manifold);
         const sBot = getSurfacePoint(state.u, state.v - width, manifold);
@@ -713,7 +599,13 @@ function animate() {
         pBot.add(ribOffset);
 
         trailPoints.push(pTop.x, pTop.y, pTop.z, pBot.x, pBot.y, pBot.z);
-        trailColors.push(color.r, color.g, color.b, color.r, color.g, color.b);
+        trailColors.push(ballColor.r, ballColor.g, ballColor.b, ballColor.r, ballColor.g, ballColor.b);
+
+        if (trailPoints.length > 600) {
+            // Limit trail length
+            trailPoints.splice(0, 6);
+            trailColors.splice(0, 6);
+        }
 
         if (trailPoints.length > 6) {
             const geo = ribbonFront.geometry;
@@ -727,27 +619,16 @@ function animate() {
             geo.attributes.color.needsUpdate = true;
         }
 
-        // Footsteps
-        if (footprintCount < MAX_FOOTSTEPS && Math.random() < 0.1) {
-            const matrix = new THREE.Matrix4();
-            const pos = p.clone().sub(nReal.clone().multiplyScalar(0.01));
-            matrix.compose(pos, q, new THREE.Vector3(1, 1, 1));
-            footstepsMesh.setMatrixAt(footprintCount, matrix);
-            footstepsMesh.instanceMatrix.needsUpdate = true;
-            footstepsMesh.count = footprintCount + 1;
-            footprintCount++;
-        }
-
         checkSeamCrossing();
         updateUI();
     }
 
     // Ball Camera (Follow particle)
     if (isBallCam && particle) {
-        const offset = new THREE.Vector3(0, 1, 2);
-        offset.applyQuaternion(particle.quaternion);
+        const offset = new THREE.Vector3(0, 0.3, 0.5);
         camera.position.lerp(particle.position.clone().add(offset), 0.1);
         camera.lookAt(particle.position);
+        controls.target.copy(particle.position);
     }
 
     // Update controls and render

@@ -80,16 +80,61 @@ const MATERIALS = {
     trampoline: { name: "Bouncy Tarp", speedMod: 1.2, roughness: 0.0, bounce: 0.2, color: 0x3333ff, opacity: 0.9, wireframe: false, texture: './web_assets/textures/trampoline.png' }
 };
 
-const ENV_MAPS = {
-    mountains: './web_assets/environments/mountains.png',
-    forest: './web_assets/environments/forest.png',
-    sunset: './web_assets/environments/sunset.png'
+const ENV_CONFIGS = {
+    mountains: {
+        colors: [
+            { stop: 0.0, color: new THREE.Color(0x001f3f) },  // Deep blue at top
+            { stop: 0.3, color: new THREE.Color(0x4a90e2) },  // Sky blue
+            { stop: 0.6, color: new THREE.Color(0xb8d4e8) },  // Light blue
+            { stop: 1.0, color: new THREE.Color(0xffffff) }   // White at horizon
+        ],
+        fog: { color: 0xb8d4e8, near: 2, far: 15 }
+    },
+    forest: {
+        colors: [
+            { stop: 0.0, color: new THREE.Color(0x1a3a2e) },  // Dark green at top
+            { stop: 0.4, color: new THREE.Color(0x2e5f4c) },  // Forest green
+            { stop: 0.7, color: new THREE.Color(0x5a8f7b) },  // Light green
+            { stop: 1.0, color: new THREE.Color(0x88b399) }   // Pale green
+        ],
+        fog: { color: 0x88b399, near: 2, far: 12 }
+    },
+    sunset: {
+        colors: [
+            { stop: 0.0, color: new THREE.Color(0x1a0b2e) },  // Deep purple at top
+            { stop: 0.3, color: new THREE.Color(0xff6b6b) },  // Pink/red
+            { stop: 0.5, color: new THREE.Color(0xffa500) },  // Orange
+            { stop: 0.7, color: new THREE.Color(0xffd700) },  // Golden
+            { stop: 1.0, color: new THREE.Color(0xffe4b5) }   // Warm horizon
+        ],
+        fog: { color: 0xffa500, near: 3, far: 20 }
+    }
 };
+
+function createGradientBackground(config) {
+    // Create a canvas for gradient background
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Create vertical gradient from top to bottom
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    config.colors.forEach(({ stop, color }) => {
+        gradient.addColorStop(stop, `rgb(${color.r * 255}, ${color.g * 255}, ${color.b * 255})`);
+    });
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    return new THREE.CanvasTexture(canvas);
+}
 
 function loadEnvironment(key) {
     if (key === 'default') {
         scene.background = new THREE.Color(0x050505);
         scene.environment = null;
+        scene.fog = null;
         // Don't clear displacement if it was manually uploaded, but for now let's assume switching envs overrides manual image
         // To be safe: if user wants manual image back, they upload it again.
         // Actually, let's just clear it to "reset" to void state
@@ -101,32 +146,25 @@ function loadEnvironment(key) {
         return;
     }
 
-    const path = ENV_MAPS[key];
-    new THREE.TextureLoader().load(path, (texture) => {
-        texture.mapping = THREE.EquirectangularReflectionMapping;
-        scene.background = texture;
-        scene.environment = texture;
+    const config = ENV_CONFIGS[key];
+    if (!config) {
+        console.warn('Unknown environment:', key);
+        return;
+    }
 
-        // ALSO LOAD AS DISPLACEMENT MAP
-        const img = new Image();
-        img.crossOrigin = "Anonymous"; // Prevent canvas tainting
-        img.onload = function () {
-            displacementMap = document.createElement('canvas');
-            displacementMap.width = img.width;
-            displacementMap.height = img.height;
-            dispCtx = displacementMap.getContext('2d');
-            dispCtx.drawImage(img, 0, 0);
+    // Create beautiful gradient background
+    const texture = createGradientBackground(config);
+    scene.background = texture;
+    scene.environment = texture;
 
-            // Create texture for visual material
-            dispTexture = new THREE.CanvasTexture(displacementMap);
+    // Add atmospheric fog for depth
+    scene.fog = new THREE.Fog(
+        config.fog.color,
+        config.fog.near,
+        config.fog.far
+    );
 
-            document.getElementById('image-preview').style.backgroundImage = `url(${path})`;
-            document.getElementById('image-preview').textContent = "";
-
-            createManifoldShell(); // Rebuild with new terrain
-        };
-        img.src = path;
-    });
+    createManifoldShell();
 }
 
 function rk4(u, v, dt, flowFunc, amp) {
